@@ -1,0 +1,67 @@
+<%- include('partials/header') %>
+
+<div class="max-w-5xl mx-auto bg-white dark:bg-gray-900/90 rounded-2xl border border-gray-200 dark:border-white/10 shadow-xl overflow-hidden">
+    <div class="md:flex">
+        <div class="md:w-1/3 bg-gray-100 dark:bg-gray-950/50 p-4 flex justify-center items-center">
+            <% if (title.poster_url) { %>
+                <img src="<%= title.poster_url %>" class="rounded-xl shadow-2xl max-h-96 object-contain" alt="<%= title.title %>">
+            <% } else { %>
+                <div class="w-64 h-96 bg-gray-300 dark:bg-gray-800 rounded-xl flex flex-col items-center justify-center">
+                    <i class="fas fa-image text-5xl text-gray-500 dark:text-gray-600 mb-2"></i>
+                    <span class="text-gray-600 dark:text-gray-400 text-sm">Sin imagen</span>
+                </div>
+            <% } %>
+        </div>
+        <div class="p-6 md:w-2/3">
+            <h1 class="text-3xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
+                <i class="fas fa-ticket-alt text-blue-500 dark:text-blue-400"></i> <%= title.title %>
+                <span class="text-sm bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-full ml-2">Ficha completa</span>
+            </h1>
+            <p class="text-gray-600 dark:text-gray-400 italic"><%= title.original_title || '' %></p>
+            <div class="flex flex-wrap gap-3 mt-4">
+                <span class="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-xs px-3 py-1 rounded-full"><i class="far fa-calendar"></i> <%= title.year %></span>
+                <span class="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-xs px-3 py-1 rounded-full"><%= title.media_type ? title.media_type.toUpperCase() : '' %></span>
+                <span class="bg-yellow-100 dark:bg-yellow-800 text-yellow-800 dark:text-yellow-100 text-xs px-3 py-1 rounded-full"><i class="fas fa-star"></i> <%= title.rating || '?' %></span>
+                <% if (title.status && (title.status.toLowerCase() === 'returning series' || title.status.toLowerCase() === 'in production')) { %>
+                    <span class="bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-100 text-xs px-3 py-1 rounded-full">🔴 En transmisión</span>
+                <% } %>
+            </div>
+            <% if (title.overview) { %>
+                <div class="mt-5">
+                    <h3 class="font-semibold text-lg flex items-center gap-2 text-gray-800 dark:text-gray-200"><i class="fas fa-align-left text-blue-500"></i> Sinopsis</h3>
+                    <p class="text-gray-700 dark:text-gray-300 leading-relaxed"><%= title.overview %></p>
+                </div>
+            <% } %>
+            <div class="grid grid-cols-2 gap-4 mt-5 text-sm">
+                <% if (title.director) { %>
+                    <div class="text-gray-700 dark:text-gray-300"><i class="fas fa-user-tie"></i> Director: <%= title.director %></div>
+                <% } %>
+                <% if (title.cast) { %>
+                    <div class="text-gray-700 dark:text-gray-300"><i class="fas fa-users"></i> Reparto: <%= title.cast %></div>
+                <% } %>
+                <% if (title.runtime) { %>
+                    <div class="text-gray-700 dark:text-gray-300"><i class="fas fa-hourglass-half"></i> Duración: <%= title.runtime %> min</div>
+                <% } %>
+                <% if (title.genres) { %>
+                    <div class="text-gray-700 dark:text-gray-300"><i class="fas fa-tags"></i> Géneros: <%= title.genres.replace(/\|/g, ', ') %></div>
+                <% } %>
+            </div>
+            <div class="flex gap-4 mt-8">
+                <button hx-delete="/api/titles/<%= title.id %>" 
+                        hx-confirm="¿Eliminar permanentemente esta obra de tu colección?" 
+                        hx-target="body" 
+                        class="bg-red-600 dark:bg-red-800 hover:bg-red-700 dark:hover:bg-red-900 text-white px-5 py-2 rounded-lg transition flex items-center gap-2 shadow">
+                    <i class="fas fa-trash-alt"></i> Eliminar
+                </button>
+                <a href="/" class="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-white px-5 py-2 rounded-lg transition flex items-center gap-2 shadow">
+                    <i class="fas fa-arrow-left"></i> Seguir explorando
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="text-center mt-6 text-sm text-gray-500 dark:text-gray-400">
+    ¿Te gustó? <a href="/add" class="text-blue-500 dark:text-blue-400">Añade otra joya</a> o comparte este título con un amigo.
+</div>
+
+<%- include('partials/footer') %>

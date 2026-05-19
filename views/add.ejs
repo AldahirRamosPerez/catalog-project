@@ -1,0 +1,126 @@
+<%- include('partials/header') %>
+
+<div class="max-w-2xl mx-auto">
+  <div class="bg-white dark:bg-gray-900/80 rounded-2xl border border-gray-200 dark:border-white/10 p-6 shadow-xl">
+    <h1 class="text-2xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
+      <i class="fas fa-plus-circle text-blue-500 dark:text-blue-400"></i> Añadir una nueva obra
+    </h1>
+    <p class="text-gray-700 dark:text-gray-400 mb-6">Completa los datos. Usa la búsqueda TMDb y nosotros rellenaremos el resto.</p>
+
+    <!-- Búsqueda inteligente con selector de tipo -->
+    <div class="mb-6">
+      <label class="block text-sm font-semibold mb-2 text-gray-800 dark:text-gray-300">
+        <i class="fas fa-search"></i> Búsqueda inteligente
+      </label>
+      <div class="flex gap-2">
+        <select id="searchType" class="text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-800">
+          <option value="movie">Película</option>
+          <option value="tv">Serie</option>
+        </select>
+        <input type="text" id="searchInput" placeholder="Ej: Inception, Stranger Things..." 
+               class="flex-1 p-2 rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+      </div>
+      <div id="searchResults" class="mt-2"></div>
+      <p class="text-xs text-gray-500 mt-1">Selecciona el tipo antes de buscar para obtener resultados precisos.</p>
+    </div>
+
+    <form method="post" action="/api/titles" class="space-y-4">
+      <div>
+        <label class="block text-sm font-semibold mb-1 text-gray-800 dark:text-gray-300">Título *</label>
+        <input type="text" name="title" required class="w-full p-3 rounded-xl bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white">
+      </div>
+      <div>
+        <label class="block text-sm font-semibold mb-1 text-gray-800 dark:text-gray-300">Tipo *</label>
+        <select name="media_type" id="mediaTypeSelect" class="w-full p-3 rounded-xl bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white">
+          <option value="movie">Película</option>
+          <option value="tv">Serie</option>
+          <option value="anime">Anime</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-semibold mb-1 text-gray-800 dark:text-gray-300">Año de estreno *</label>
+        <input type="number" name="year" required class="w-full p-3 rounded-xl bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700">
+      </div>
+      <div>
+        <label class="block text-sm font-semibold mb-1 text-gray-800 dark:text-gray-300">ID externo (opcional)</label>
+        <input type="text" name="external_id" id="externalId" placeholder="tmdb:12345" class="w-full p-3 rounded-xl bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700">
+        <p class="text-xs text-gray-500 mt-1">Se llena automáticamente al usar la búsqueda.</p>
+      </div>
+      <button type="submit" class="w-full bg-emerald-600 dark:bg-emerald-700 hover:bg-emerald-700 dark:hover:bg-emerald-800 py-3 rounded-xl transition font-bold text-white shadow">
+        <i class="fas fa-save"></i> Guardar en mi catálogo
+      </button>
+    </form>
+  </div>
+</div>
+
+<script>
+  const searchInput = document.getElementById('searchInput');
+  const searchType = document.getElementById('searchType');
+  const mediaTypeSelect = document.getElementById('mediaTypeSelect');
+  const externalIdInput = document.getElementById('externalId');
+  const titleInput = document.querySelector('input[name="title"]');
+  const yearInput = document.querySelector('input[name="year"]');
+
+  // Sincronizar el tipo de búsqueda con el tipo del formulario (por comodidad)
+  searchType.addEventListener('change', () => {
+    mediaTypeSelect.value = searchType.value;
+  });
+  mediaTypeSelect.addEventListener('change', () => {
+    searchType.value = mediaTypeSelect.value;
+  });
+
+  // Búsqueda al escribir
+  searchInput.addEventListener('input', function() {
+    let query = this.value.trim();
+    if (query.length < 2) {
+      document.getElementById('searchResults').innerHTML = '';
+      return;
+    }
+    const type = searchType.value; // movie, tv, anime
+    fetch(`/api/external/search?query=${encodeURIComponent(query)}&media_type=${type}`)
+      .then(r => r.json())
+      .then(data => {
+        let html = '<div class="bg-gray-100 dark:bg-gray-800 rounded-xl mt-3 p-2 border border-gray-300 dark:border-gray-700">';
+        if (data.length === 0) {
+          html += '<div class="p-2 text-gray-500">No se encontraron resultados.</div>';
+        } else {
+          data.forEach(item => {
+            html += `<div class="p-2 border-b border-gray-300 dark:border-gray-700 flex justify-between items-center">
+                      <div>
+                        <strong>${escapeHtml(item.title)}</strong> (${item.year || '?'})
+                      </div>
+                      <button onclick="selectResult('${escapeHtml(item.title)}', ${item.year || 0}, '${item.external_id}')" 
+                              class="bg-blue-600 text-white text-xs px-3 py-1 rounded hover:bg-blue-700 transition">
+                        Usar
+                      </button>
+                    </div>`;
+          });
+        }
+        html += '</div>';
+        document.getElementById('searchResults').innerHTML = html;
+      })
+      .catch(err => {
+        console.error(err);
+        document.getElementById('searchResults').innerHTML = '<div class="text-red-500 text-sm mt-2">Error en la búsqueda</div>';
+      });
+  });
+
+  function selectResult(title, year, externalId) {
+    titleInput.value = title;
+    if (year) yearInput.value = year;
+    externalIdInput.value = externalId;
+    document.getElementById('searchResults').innerHTML = '<div class="text-green-600 dark:text-green-400 text-sm mt-2">✓ Datos precargados. Revisa y guarda.</div>';
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, function(m) {
+      if (m === '&') return '&amp;';
+      if (m === '<') return '&lt;';
+      if (m === '>') return '&gt;';
+      return m;
+    });
+  }
+</script>
+
+<%- include('partials/footer') %>

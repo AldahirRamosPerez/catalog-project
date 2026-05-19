@@ -1,0 +1,153 @@
+<%- include('partials/header') %>
+
+<!-- Hero destacado (solo si hay títulos) -->
+<div id="heroContainer" class="relative rounded-xl overflow-hidden mb-8 h-96 md:h-[500px] w-full bg-gray-900">
+  <div id="heroBackdrop" class="absolute inset-0 bg-cover bg-center blur-sm scale-105"></div>
+  <div class="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent"></div>
+  <div class="relative z-10 flex flex-col justify-end h-full p-6 md:p-10 text-white">
+    <h1 id="heroTitle" class="text-3xl md:text-5xl font-bold max-w-2xl">Cargando...</h1>
+    <p id="heroOverview" class="text-sm md:text-base max-w-xl mt-2 line-clamp-3 text-gray-200"></p>
+    <div class="flex gap-3 mt-4">
+      <a id="heroLink" href="#" class="bg-white text-black hover:bg-gray-200 px-5 py-2 rounded-md font-semibold transition flex items-center gap-2"><i class="fas fa-play"></i> Ver más</a>
+      <button id="refreshHero" class="bg-gray-700 hover:bg-gray-600 px-5 py-2 rounded-md transition flex items-center gap-2"><i class="fas fa-sync-alt"></i> Otra recomendación</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  function renderCard(title) {
+    return `
+      <a href="/title/${title.id}" class="flex-shrink-0 w-40 md:w-48 bg-gray-800 rounded-lg overflow-hidden hover:scale-105 transition duration-300 shadow-lg group">
+        <div class="aspect-[2/3] overflow-hidden">
+          ${title.poster_url ? `<img src="${title.poster_url}" class="w-full h-full object-cover group-hover:opacity-90 transition">` : `<div class="w-full h-full flex items-center justify-center bg-gray-700 text-gray-400"><i class="fas fa-image text-3xl"></i></div>`}
+        </div>
+        <div class="p-2 text-center">
+          <p class="font-semibold text-sm truncate">${escapeHtml(title.title)}</p>
+          <p class="text-xs text-gray-400">${title.year || '?'} <span class="text-yellow-500">⭐ ${title.rating || '?'}</span></p>
+        </div>
+      </a>
+    `;
+  }
+
+  function createCarousel(sectionId, title, icon, items) {
+    return `
+      <div class="mb-10">
+        <div class="flex justify-between items-center mb-3">
+          <h2 class="text-xl font-semibold flex items-center gap-2"><i class="${icon} text-red-500"></i> ${title}</h2>
+          <div class="flex gap-2">
+            <button class="carousel-prev w-8 h-8 rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center transition" data-target="${sectionId}"><i class="fas fa-chevron-left text-sm"></i></button>
+            <button class="carousel-next w-8 h-8 rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center transition" data-target="${sectionId}"><i class="fas fa-chevron-right text-sm"></i></button>
+          </div>
+        </div>
+        <div id="${sectionId}" class="flex overflow-x-auto gap-3 pb-2 scroll-smooth" style="scrollbar-width: thin;">
+          ${items.map(renderCard).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[m])); }
+  function getRandomItems(arr, count) {
+    const shuffled = [...arr];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled.slice(0, count);
+  }
+
+  let allTitles = [];
+
+  async function loadHome() {
+    const res = await fetch('/api/v1/titles?limit=5000');
+    const data = await res.json();
+    allTitles = data.data;
+    if (!allTitles.length) return;
+
+    // Hero: título aleatorio con rating >= 7 (si no, cualquiera)
+    // Hero: seleccionar un título aleatorio (el primero si no hay rating)
+    let heroCandidates = allTitles.filter(t => t.rating && t.rating >= 7);
+    if (heroCandidates.length === 0) heroCandidates = allTitles;
+    if (heroCandidates.length === 0) {
+      console.error('No hay títulos para mostrar en el héroe');
+      return;
+    }
+    let hero = heroCandidates[Math.floor(Math.random() * heroCandidates.length)];
+
+    // Mostrar el héroe
+    document.getElementById('heroTitle').innerText = hero.title;
+    document.getElementById('heroOverview').innerText = hero.overview ? hero.overview.substring(0, 180) + '…' : 'Sin sinopsis disponible.';
+    document.getElementById('heroLink').href = `/title/${hero.id}`;
+
+    // Imagen de fondo: usar poster_url o un placeholder
+    const backdropUrl = hero.poster_url ? hero.poster_url.replace('/w500', '/original') : 'https://placehold.co/1920x1080/1e1e2f/white?text=Cinematix';
+    document.getElementById('heroBackdrop').style.backgroundImage = `url(${backdropUrl})`;
+
+    // Asegurar que el contenedor sea visible
+    document.getElementById('heroContainer').classList.remove('hidden');
+
+    // Botón para refrescar
+    document.getElementById('refreshHero').onclick = () => {
+      let newHero = heroCandidates[Math.floor(Math.random() * heroCandidates.length)];
+      while (newHero.id === hero.id && heroCandidates.length > 1) newHero = heroCandidates[Math.floor(Math.random() * heroCandidates.length)];
+      hero = newHero;
+      document.getElementById('heroTitle').innerText = hero.title;
+      document.getElementById('heroOverview').innerText = hero.overview ? hero.overview.substring(0, 180) + '…' : 'Sin sinopsis disponible.';
+      document.getElementById('heroLink').href = `/title/${hero.id}`;
+      const newBackdropUrl = hero.poster_url ? hero.poster_url.replace('/w500', '/original') : 'https://placehold.co/1920x1080/1e1e2f/white?text=Cinematix';
+      document.getElementById('heroBackdrop').style.backgroundImage = `url(${newBackdropUrl})`;
+    };
+
+    const heroId = hero.id;
+    const otherTitles = allTitles.filter(t => t.id !== heroId);
+
+    // Mejor valorados (top 8)
+    const topRated = [...allTitles].sort((a,b) => (b.rating||0) - (a.rating||0)).slice(0, 8);
+    // Recomendados para ti (aleatorios, excluyendo hero y los mejores)
+    const excludeReco = [...topRated.map(t=>t.id), heroId];
+    let recoCandidates = otherTitles.filter(t => !excludeReco.includes(t.id));
+    const randomRecos = getRandomItems(recoCandidates, 10);
+    // Descubrimientos (otros aleatorios, excluyendo hero, mejores y recomendados)
+    const allExclude = [...excludeReco, ...randomRecos.map(t=>t.id)];
+    const discCandidates = otherTitles.filter(t => !allExclude.includes(t.id));
+    const discoveries = getRandomItems(discCandidates, 10);
+
+    // Construir el DOM
+    const main = document.querySelector('main');
+    main.innerHTML = `
+      <div id="heroContainer" class="relative rounded-xl overflow-hidden mb-8 h-96 md:h-[500px] w-full bg-gray-900">
+        <div id="heroBackdrop" class="absolute inset-0 bg-cover bg-center blur-sm scale-105"></div>
+        <div class="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent"></div>
+        <div class="relative z-10 flex flex-col justify-end h-full p-6 md:p-10 text-white">
+          <h1 id="heroTitle" class="text-3xl md:text-5xl font-bold max-w-2xl"></h1>
+          <p id="heroOverview" class="text-sm md:text-base max-w-xl mt-2 line-clamp-3 text-gray-200"></p>
+          <div class="flex gap-3 mt-4">
+            <a id="heroLink" href="#" class="bg-white text-black hover:bg-gray-200 px-5 py-2 rounded-md font-semibold transition flex items-center gap-2"><i class="fas fa-play"></i> Ver más</a>
+            <button id="refreshHero" class="bg-gray-700 hover:bg-gray-600 px-5 py-2 rounded-md transition flex items-center gap-2"><i class="fas fa-sync-alt"></i> Otra recomendación</button>
+          </div>
+        </div>
+      </div>
+      ${createCarousel('recoCarousel', 'Recomendados para ti', 'fas fa-fire', randomRecos)}
+      ${createCarousel('topRatedCarousel', 'Mejor valorados', 'fas fa-trophy', topRated)}
+      ${createCarousel('discoverCarousel', 'Descubrimientos', 'fas fa-compass', discoveries)}
+    `;
+
+    // Adjuntar eventos de los carruseles
+    document.querySelectorAll('.carousel-prev').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = document.getElementById(btn.dataset.target);
+        if (target) target.scrollBy({ left: -300, behavior: 'smooth' });
+      });
+    });
+    document.querySelectorAll('.carousel-next').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = document.getElementById(btn.dataset.target);
+        if (target) target.scrollBy({ left: 300, behavior: 'smooth' });
+      });
+    });
+  }
+
+  loadHome();
+</script>
+
+<%- include('partials/footer') %>

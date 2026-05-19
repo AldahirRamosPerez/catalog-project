@@ -1,0 +1,34 @@
+<% if (titles && titles.length) { %>
+  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+    <% titles.forEach(title => { %>
+      <div class="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow hover:shadow-xl transition border border-gray-200 dark:border-gray-700">
+        <a href="/title/<%= title.id %>">
+          <% if (title.poster_url) { %>
+            <img src="<%= title.poster_url %>" class="w-full h-72 object-cover" alt="<%= title.title %>">
+          <% } else { %>
+            <div class="w-full h-72 bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+              <i class="fas fa-image text-4xl text-gray-500 dark:text-gray-400"></i>
+              <span class="ml-2 text-gray-500 dark:text-gray-400">Sin póster</span>
+            </div>
+          <% } %>
+          <div class="p-4">
+            <h3 class="font-bold text-lg truncate text-gray-900 dark:text-white"><%= title.title %></h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400"><%= title.year %> • <%= title.media_type %></p>
+            <% if (title.status && (title.status.toLowerCase() === 'returning series' || title.status.toLowerCase() === 'in production')) { %>
+              <span class="inline-block bg-green-500 text-white text-xs px-2 py-1 rounded-full mt-1">En transmisión</span>
+            <% } %>
+            <div class="flex justify-between items-center mt-2">
+              <span class="text-yellow-500 dark:text-yellow-400">⭐ <%= title.rating || '?' %></span>
+              <span class="text-xs bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded text-gray-700 dark:text-gray-300">Detalle</span>
+            </div>
+          </div>
+        </a>
+      </div>
+    <% }) %>
+  </div>
+<% } else { %>
+  <div class="col-span-full text-center py-12 text-gray-500 dark:text-gray-400">
+    <i class="fas fa-frown text-5xl mb-2"></i>
+    <p>No se encontraron títulos con esos filtros.</p>
+  </div>
+<% } %>

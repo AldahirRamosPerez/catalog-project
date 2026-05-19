@@ -1,0 +1,36 @@
+<%- include('partials/header') %>
+
+<div class="flex items-center gap-3 mb-6">
+    <i class="<%= icon %> text-3xl text-blue-400"></i>
+    <h1 class="text-3xl font-bold"><%= title %></h1>
+    <span class="bg-gray-800 text-sm px-3 py-1 rounded-full"><%= titles.length %> títulos</span>
+</div>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+    <% titles.forEach(title => { %>
+        <div class="bg-gray-900/60 rounded-xl overflow-hidden border border-white/10 hover:border-blue-500/50 transition hover:-translate-y-1">
+            <a href="/title/<%= title.id %>">
+                <div class="h-72 overflow-hidden">
+                    <% if (title.poster_url) { %>
+                        <img src="<%= title.poster_url %>" class="w-full h-full object-cover">
+                    <% } else { %>
+                        <div class="w-full h-full bg-gray-800 flex items-center justify-center"><i class="fas fa-image text-4xl text-gray-600"></i></div>
+                    <% } %>
+                </div>
+                <div class="p-3">
+                    <h2 class="font-bold truncate"><%= title.title %></h2>
+                    <div class="flex justify-between text-sm text-gray-400 mt-1">
+                        <span><%= title.year || '?' %></span>
+                        <span class="text-yellow-400"><i class="fas fa-star"></i> <%= title.rating || 'N/A' %></span>
+                    </div>
+                </div>
+            </a>
+        </div>
+    <% }) %>
+</div>
+
+<% if (titles.length === 0) { %>
+    <div class="text-center py-12"><i class="fas fa-frown text-5xl text-gray-600"></i><p class="mt-2">No hay títulos en esta categoría.</p></div>
+<% } %>
+
+<%- include('partials/footer') %>

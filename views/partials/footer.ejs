@@ -1,0 +1,45 @@
+    </main>
+    <footer class="text-center text-gray-600 dark:text-gray-400 text-sm py-6 border-t border-gray-300 dark:border-gray-800 mt-8">
+        <p>Hecho con <i class="fas fa-heart text-red-500"></i> para cinéfilos apasionados.</p>
+        <p class="mt-1">Desarrollado por Miguel Aldahir Ramos Pérez | 
+        <a href="https://github.com/MiguelAldahir" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline">GitHub</a></p>
+        <p class="text-xs mt-2">¿Falta una película? <a href="/add" class="text-blue-500">Agrégala ahora</a> y completa tu universo.</p>
+    </footer>
+    <script>
+        function setTheme(theme) {
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark');
+                const icon = document.getElementById('themeIcon');
+                if (icon) {
+                    icon.classList.remove('fa-moon');
+                    icon.classList.add('fa-sun');
+                }
+            } else {
+                document.documentElement.classList.remove('dark');
+                const icon = document.getElementById('themeIcon');
+                if (icon) {
+                    icon.classList.remove('fa-sun');
+                    icon.classList.add('fa-moon');
+                }
+            }
+            localStorage.setItem('theme', theme);
+        }
+
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) {
+            setTheme(savedTheme);
+        } else {
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            setTheme(prefersDark ? 'dark' : 'light');
+        }
+
+        const themeBtn = document.getElementById('themeToggle');
+        if (themeBtn) {
+            themeBtn.addEventListener('click', () => {
+                const isDark = document.documentElement.classList.contains('dark');
+                setTheme(isDark ? 'light' : 'dark');
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,223 @@
+<%- include('partials/header') %>
+
+<div class="flex justify-between items-center mb-6 flex-wrap gap-2">
+  <div>
+    <h1 class="text-3xl font-bold flex items-center gap-2">
+      <i class="fas fa-chart-pie text-blue-500"></i> Panel de análisis
+    </h1>
+    <p class="text-gray-600 dark:text-gray-400">Estadísticas en tiempo real de tu catálogo</p>
+  </div>
+  <button onclick="window.print()" class="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 px-4 py-2 rounded-lg transition flex items-center gap-2">
+    <i class="fas fa-print"></i> Exportar PDF
+  </button>
+</div>
+
+<!-- Filtros del dashboard -->
+<div class="bg-white dark:bg-gray-800/80 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700 mb-8">
+  <div class="flex flex-wrap gap-4 items-end">
+    <div>
+      <label class="block text-sm font-semibold mb-1">Tipo</label>
+      <select id="filterType" class="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-800">
+        <option value="">Todos</option>
+        <option value="movie">Películas</option>
+        <option value="tv">Series</option>
+      </select>
+    </div>
+    <div>
+      <label class="block text-sm font-semibold mb-1">Año desde</label>
+      <input type="number" id="filterYearMin" placeholder="Ej: 2000" class="w-28 border border-gray-300 dark:border-gray-600 rounded-lg px-2 py-1.5 bg-white dark:bg-gray-800">
+    </div>
+    <div>
+      <label class="block text-sm font-semibold mb-1">Año hasta</label>
+      <input type="number" id="filterYearMax" placeholder="Ej: 2024" class="w-28 border border-gray-300 dark:border-gray-600 rounded-lg px-2 py-1.5 bg-white dark:bg-gray-800">
+    </div>
+    <div>
+      <button id="applyFiltersBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1.5 rounded-lg transition">Aplicar filtros</button>
+      <button id="resetFiltersBtn" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-1.5 rounded-lg transition ml-2">Reset</button>
+    </div>
+  </div>
+</div>
+
+<!-- KPIs -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+  <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 transition hover:shadow-md">
+    <div class="flex items-center justify-between">
+      <i class="fas fa-database text-3xl text-blue-500"></i>
+      <span class="text-2xl font-bold" id="totalTitles">-</span>
+    </div>
+    <p class="text-gray-500 dark:text-gray-400 mt-2 text-sm">Total obras</p>
+  </div>
+  <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 transition hover:shadow-md">
+    <div class="flex items-center justify-between">
+      <i class="fas fa-star text-3xl text-yellow-500"></i>
+      <span class="text-2xl font-bold" id="avgRating">-</span>
+    </div>
+    <p class="text-gray-500 dark:text-gray-400 mt-2 text-sm">Rating promedio</p>
+  </div>
+  <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 transition hover:shadow-md">
+    <div class="flex items-center justify-between">
+      <i class="fas fa-calendar-alt text-3xl text-green-500"></i>
+      <span class="text-2xl font-bold" id="yearRange">-</span>
+    </div>
+    <p class="text-gray-500 dark:text-gray-400 mt-2 text-sm">Rango de años</p>
+  </div>
+  <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 transition hover:shadow-md">
+    <div class="flex items-center justify-between">
+      <i class="fas fa-percent text-3xl text-purple-500"></i>
+      <span class="text-2xl font-bold" id="posterPercent">-</span>
+    </div>
+    <p class="text-gray-500 dark:text-gray-400 mt-2 text-sm">Con póster</p>
+  </div>
+</div>
+
+<!-- Gráficos principales -->
+<div class="grid md:grid-cols-2 gap-6 mb-8">
+  <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+    <h2 class="text-lg font-semibold mb-3 flex items-center gap-2"><i class="fas fa-chart-pie text-blue-400"></i> Distribución por tipo</h2>
+    <canvas id="typeChart" height="200"></canvas>
+  </div>
+  <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+    <h2 class="text-lg font-semibold mb-3 flex items-center gap-2"><i class="fas fa-chart-line text-green-400"></i> Evolución del rating por año</h2>
+    <canvas id="ratingTrendChart" height="200"></canvas>
+  </div>
+</div>
+
+<div class="grid md:grid-cols-2 gap-6 mb-8">
+  <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+    <h2 class="text-lg font-semibold mb-3 flex items-center gap-2"><i class="fas fa-tags text-purple-400"></i> Top 10 géneros</h2>
+    <canvas id="genreChart" height="250"></canvas>
+  </div>
+  <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+    <h2 class="text-lg font-semibold mb-3 flex items-center gap-2"><i class="fas fa-clock text-orange-400"></i> Últimos títulos agregados</h2>
+    <div class="overflow-x-auto max-h-80 overflow-y-auto">
+      <table class="min-w-full text-sm">
+        <thead class="border-b border-gray-200 dark:border-gray-700">
+          <tr><th class="text-left py-2">Título</th><th class="text-left">Año</th><th class="text-left">Rating</th></tr>
+        </thead>
+        <tbody id="recentTable"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+  let typeChart, ratingTrendChart, genreChart;
+  let currentData = { titles: [], total: 0, avgRating: 0, typeCounts: {}, ratingOverYears: [], topGenres: [], recent: [], yearMin: null, yearMax: null };
+
+  // Cargar todos los títulos (usamos un límite alto)
+  async function fetchTitles(filters = {}) {
+    const params = new URLSearchParams({ limit: 5000, ...filters });
+    const res = await fetch(`/api/v1/titles?${params.toString()}`);
+    const data = await res.json();
+    return data.data;
+  }
+
+  async function loadDashboard() {
+    const type = document.getElementById('filterType').value;
+    const yearMin = document.getElementById('filterYearMin').value;
+    const yearMax = document.getElementById('filterYearMax').value;
+    const filters = {};
+    if (type) filters.media_type = type;
+    if (yearMin) filters.year_min = parseInt(yearMin);
+    if (yearMax) filters.year_max = parseInt(yearMax);
+    
+    const titles = await fetchTitles(filters);
+    currentData.titles = titles;
+    
+    // Calcular estadísticas
+    const total = titles.length;
+    const avgRating = total ? (titles.reduce((s,t)=>s+(t.rating||0),0)/total).toFixed(1) : 0;
+    const years = titles.filter(t=>t.year).map(t=>t.year);
+    const yearMinVal = years.length ? Math.min(...years) : '-';
+    const yearMaxVal = years.length ? Math.max(...years) : '-';
+    const withPoster = titles.filter(t=>t.poster_url).length;
+    const posterPercent = total ? Math.round(withPoster/total*100) : 0;
+    
+    document.getElementById('totalTitles').innerText = total;
+    document.getElementById('avgRating').innerText = avgRating;
+    document.getElementById('yearRange').innerText = yearMinVal !== '-' ? `${yearMinVal} - ${yearMaxVal}` : '-';
+    document.getElementById('posterPercent').innerText = `${posterPercent}%`;
+    
+    // Tipo distribution
+    const typeCounts = {};
+    titles.forEach(t=>{ typeCounts[t.media_type] = (typeCounts[t.media_type]||0)+1; });
+    const typeLabels = Object.keys(typeCounts);
+    const typeData = Object.values(typeCounts);
+    
+    // Rating por año
+    const yearRatings = {};
+    titles.forEach(t => {
+      if (t.year && t.rating) {
+        if (!yearRatings[t.year]) yearRatings[t.year] = { sum:0, count:0 };
+        yearRatings[t.year].sum += t.rating;
+        yearRatings[t.year].count++;
+      }
+    });
+    const ratingOverYears = Object.entries(yearRatings)
+      .map(([year,data]) => ({ year: parseInt(year), avg: data.sum/data.count }))
+      .sort((a,b)=>a.year-b.year);
+    
+    // Top géneros
+    const genreCount = {};
+    titles.forEach(t => {
+      if (t.genres) {
+        t.genres.split('|').forEach(g => {
+          const clean = g.trim();
+          if (clean) genreCount[clean] = (genreCount[clean]||0)+1;
+        });
+      }
+    });
+    const topGenres = Object.entries(genreCount).sort((a,b)=>b[1]-a[1]).slice(0,10);
+    const genreLabels = topGenres.map(g=>g[0]);
+    const genreValues = topGenres.map(g=>g[1]);
+    
+    // Últimos 8 títulos (asumiendo que el orden original de fetch es por created_at desc? No, por defecto no está ordenado)
+    // Ordenamos manualmente
+    const recent = [...titles].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,8);
+    const recentTable = document.getElementById('recentTable');
+    recentTable.innerHTML = recent.map(t => `<tr class="border-b border-gray-200 dark:border-gray-700"><td class="py-2"><a href="/title/${t.id}" class="text-blue-600 dark:text-blue-400 hover:underline">${escapeHtml(t.title)}</a></td><td>${t.year||'?'}</td><td>⭐ ${t.rating||'?'}</td></tr>`).join('');
+    
+    // Actualizar o crear gráficos
+    if (typeChart) typeChart.destroy();
+    if (ratingTrendChart) ratingTrendChart.destroy();
+    if (genreChart) genreChart.destroy();
+    
+    const chartColors = ['#3b82f6','#8b5cf6','#10b981','#f59e0b','#ef4444','#06b6d4','#ec4899','#84cc16','#f97316','#6366f1'];
+    
+    typeChart = new Chart(document.getElementById('typeChart'), {
+      type: 'doughnut',
+      data: { labels: typeLabels, datasets: [{ data: typeData, backgroundColor: chartColors.slice(0,typeLabels.length) }] },
+      options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'bottom', labels: { color: document.documentElement.classList.contains('dark') ? '#fff' : '#333' } } } }
+    });
+    
+    ratingTrendChart = new Chart(document.getElementById('ratingTrendChart'), {
+      type: 'line',
+      data: { labels: ratingOverYears.map(d=>d.year), datasets: [{ label: 'Rating promedio', data: ratingOverYears.map(d=>d.avg), borderColor: '#60a5fa', tension: 0.3, fill: false }] },
+      options: { responsive: true, scales: { y: { ticks: { color: document.documentElement.classList.contains('dark') ? '#fff' : '#333' }, grid: { color: '#374151' } }, x: { ticks: { color: document.documentElement.classList.contains('dark') ? '#fff' : '#333' } } } }
+    });
+    
+    genreChart = new Chart(document.getElementById('genreChart'), {
+      type: 'bar',
+      data: { labels: genreLabels, datasets: [{ label: 'Frecuencia', data: genreValues, backgroundColor: '#8b5cf6' }] },
+      options: { indexAxis: 'y', responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'none' } }, scales: { x: { ticks: { color: document.documentElement.classList.contains('dark') ? '#fff' : '#333' } }, y: { ticks: { color: document.documentElement.classList.contains('dark') ? '#fff' : '#333' } } } }
+    });
+  }
+  
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[m]));
+  }
+  
+  document.getElementById('applyFiltersBtn').addEventListener('click', () => loadDashboard());
+  document.getElementById('resetFiltersBtn').addEventListener('click', () => {
+    document.getElementById('filterType').value = '';
+    document.getElementById('filterYearMin').value = '';
+    document.getElementById('filterYearMax').value = '';
+    loadDashboard();
+  });
+  
+  loadDashboard();
+</script>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,13 @@
+<% titles.forEach(title => { %>
+<div class="bg-gray-800 p-3 my-2 rounded flex items-center gap-3 hover:bg-gray-700 transition">
+    <% if (title.poster_url) { %>
+        <img src="<%= title.poster_url %>" class="w-12 h-18 object-cover rounded">
+    <% } else { %>
+        <div class="w-12 h-18 bg-gray-600 rounded flex items-center justify-center">🎬</div>
+    <% } %>
+    <div class="flex-1">
+        <a href="/title/<%= title.id %>" class="font-semibold"><%= title.title %></a>
+        <p class="text-xs text-gray-400"><%= title.year %> • ⭐ <%= title.rating || '?' %></p>
+    </div>
+</div>
+<% }) %>

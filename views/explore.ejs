@@ -1,0 +1,150 @@
+<%- include('partials/header') %>
+
+<!-- Barra de filtros minimalista (sticky) -->
+<div class="sticky top-16 z-40 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800 py-2 mb-6">
+  <div class="flex flex-wrap items-center justify-between gap-2">
+    <div class="flex flex-wrap items-center gap-2">
+      <div class="relative">
+        <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs"></i>
+        <input type="text" id="searchTitle" placeholder="Buscar..." class="pl-8 pr-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-full bg-white dark:bg-gray-800 w-40 focus:outline-none focus:ring-1 focus:ring-blue-500">
+      </div>
+      <select id="genreSelect" class="text-sm border border-gray-300 dark:border-gray-600 rounded-full px-3 py-1.5 bg-white dark:bg-gray-800">
+        <option value="">Género</option>
+      </select>
+      <input type="number" id="yearInput" placeholder="Año" class="w-20 text-sm border border-gray-300 dark:border-gray-600 rounded-full px-2 py-1.5 bg-white dark:bg-gray-800">
+      <input type="number" step="0.1" id="ratingMinInput" placeholder="Rating" class="w-20 text-sm border border-gray-300 dark:border-gray-600 rounded-full px-2 py-1.5 bg-white dark:bg-gray-800">
+      <button id="filterButton" class="bg-blue-500 hover:bg-blue-600 text-white text-sm px-3 py-1.5 rounded-full transition shadow-sm">Filtrar</button>
+    </div>
+    <div id="total-count-compact" class="text-xs text-gray-500 dark:text-gray-400"></div>
+  </div>
+</div>
+
+<!-- Grid de títulos -->
+<div id="titles-grid" class="min-h-[400px]">
+  <div class="text-center py-12 text-gray-500">Cargando títulos...</div>
+</div>
+
+<!-- Paginación -->
+<div id="pagination-controls" class="flex justify-center items-center gap-3 mt-8">
+  <button id="prev-page" class="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-white text-sm px-3 py-1 rounded-full disabled:opacity-50 transition" disabled>
+    ← Anterior
+  </button>
+  <span id="page-info" class="text-xs text-gray-600 dark:text-gray-400">Página 1</span>
+  <button id="next-page" class="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-white text-sm px-3 py-1 rounded-full transition">
+    Siguiente →
+  </button>
+</div>
+
+<script>
+  // Cargar géneros
+  fetch('/api/v1/genres')
+    .then(res => res.json())
+    .then(genres => {
+      const select = document.getElementById('genreSelect');
+      genres.forEach(genre => {
+        const option = document.createElement('option');
+        option.value = genre;
+        option.textContent = genre;
+        select.appendChild(option);
+      });
+    });
+
+  const searchTitle = document.getElementById('searchTitle');
+  const genreSelect = document.getElementById('genreSelect');
+  const yearInput = document.getElementById('yearInput');
+  const ratingMinInput = document.getElementById('ratingMinInput');
+  const filterButton = document.getElementById('filterButton');
+  const titlesGrid = document.getElementById('titles-grid');
+  const totalSpan = document.getElementById('total-count-compact');
+  const prevBtn = document.getElementById('prev-page');
+  const nextBtn = document.getElementById('next-page');
+  const pageInfo = document.getElementById('page-info');
+
+  let currentPage = 1;
+  let totalPages = 1;
+
+  function getFilters() {
+    const f = {};
+    if (searchTitle.value.trim()) f.title = searchTitle.value.trim();
+    if (genreSelect.value) f.genre = genreSelect.value;
+    if (yearInput.value) f.year = parseInt(yearInput.value);
+    if (ratingMinInput.value) f.rating_min = parseFloat(ratingMinInput.value);
+    return f;
+  }
+
+  async function loadTitles(page = 1) {
+    titlesGrid.innerHTML = '<div class="text-center py-12"><i class="fas fa-spinner fa-spin text-blue-500"></i><p class="mt-2">Buscando...</p></div>';
+    const filters = getFilters();
+    const params = new URLSearchParams({ ...filters, page, limit: 20 });
+    const url = `/api/v1/titles?${params.toString()}`;
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+      renderGrid(data.data);
+      totalSpan.innerText = `${data.pagination.total} títulos`;
+      currentPage = data.pagination.page;
+      totalPages = data.pagination.pages;
+      pageInfo.innerText = `${currentPage} / ${totalPages}`;
+      prevBtn.disabled = currentPage === 1;
+      nextBtn.disabled = currentPage === totalPages;
+    } catch (err) {
+      titlesGrid.innerHTML = '<div class="text-center py-12 text-red-500">Error al cargar. Recarga la página.</div>';
+    }
+  }
+
+  function renderGrid(titles) {
+    if (!titles.length) {
+      titlesGrid.innerHTML = `
+        <div class="text-center py-12">
+          <i class="fas fa-frown text-3xl text-gray-400"></i>
+          <p class="mt-2">No hay títulos con esos filtros.</p>
+          <button id="clearFiltersBtn" class="mt-3 bg-blue-500 text-white text-sm px-3 py-1 rounded-full">Limpiar filtros</button>
+        </div>`;
+      const clearBtn = document.getElementById('clearFiltersBtn');
+      if (clearBtn) clearBtn.addEventListener('click', () => {
+        searchTitle.value = '';
+        genreSelect.value = '';
+        yearInput.value = '';
+        ratingMinInput.value = '';
+        loadTitles(1);
+      });
+      return;
+    }
+    let html = `<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">`;
+    titles.forEach(t => {
+      html += `
+        <div class="group bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition">
+          <a href="/title/${t.id}" class="block">
+            <div class="aspect-[2/3] overflow-hidden bg-gray-100 dark:bg-gray-700">
+              ${t.poster_url ? `<img src="${t.poster_url}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" alt="${escapeHtml(t.title)}">` : `<div class="w-full h-full flex items-center justify-center text-gray-400"><i class="fas fa-image text-3xl"></i></div>`}
+            </div>
+            <div class="p-3">
+              <h3 class="font-semibold text-base truncate">${escapeHtml(t.title)}</h3>
+              <div class="flex justify-between items-center mt-1 text-xs text-gray-500 dark:text-gray-400">
+                <span>${t.year || '?'}</span>
+                <span>${t.media_type || ''}</span>
+                <span class="text-yellow-500"><i class="fas fa-star"></i> ${t.rating || '?'}</span>
+              </div>
+            </div>
+          </a>
+        </div>
+      `;
+    });
+    html += `</div>`;
+    titlesGrid.innerHTML = html;
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[m]));
+  }
+
+  filterButton.addEventListener('click', () => { currentPage = 1; loadTitles(1); });
+  prevBtn.addEventListener('click', () => { if (currentPage > 1) loadTitles(currentPage - 1); });
+  nextBtn.addEventListener('click', () => { if (currentPage < totalPages) loadTitles(currentPage + 1); });
+  searchTitle.addEventListener('keypress', e => { if (e.key === 'Enter') filterButton.click(); });
+
+  loadTitles(1);
+</script>
+
+<%- include('partials/footer') %>
